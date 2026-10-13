@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Métodos de ordenamiento: mapa conceptual y diagramas de flujo</title>
+<style>
+    :root {
+    --bg: #f1e7d2;
+    --grid: #e3d5b8;
+    --surface: #fbf6ea;
+    --text: #13294b;
+    --muted: #55688a;
+    --line: #4a6590;
+    --soft: #f6eedb;
+    --c1: #3470c0;   /* cuadráticos: azul */
+    --c2: #14325f;   /* logarítmicos: azul marino */
+    --c3: #9a6a1f;   /* nuevo: beige oscuro / dorado */
+    --focus: #1d4ed8;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-padding-top: 12px; }
+  body {
+    margin: 0;
+    font-family: var(--sans);
+    color: var(--text);
+    background-color: var(--bg);
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 28px 28px;
+    line-height: 1.5;
+  }
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  header { padding: 28px 24px 8px; max-width: 1280px; margin: 0 auto; }
+  h1 { font-family: var(--serif); font-size: clamp(1.6rem, 3.4vw, 2.4rem); line-height: 1.15; margin: 0 0 6px; font-weight: 700; }
+  header p { margin: 0; color: var(--muted); max-width: 70ch; }
+  nav.tabs { max-width: 1280px; margin: 18px auto 0; padding: 0 24px; display: flex; gap: 6px; flex-wrap: wrap; }
+  nav.tabs button {
+    font: inherit; font-weight: 600; cursor: pointer;
+    padding: 10px 18px; border: 2px solid var(--line); border-bottom-width: 2px;
+    background: var(--surface); color: var(--text); border-radius: 10px 10px 0 0;
+  }
+  nav.tabs button[aria-selected="true"] { background: var(--text); color: var(--surface); border-color: var(--text); }
+  main { max-width: 1280px; margin: 0 auto; padding: 0 24px 48px; }
+  section.panel { background: var(--surface); border: 2px solid var(--text); border-radius: 0 12px 12px 12px; padding: 20px; }
+  section.panel[hidden] { display: none; }
+
+  /* Mapa conceptual */
+  .map-wrap { overflow-x: auto; border: 1px solid var(--grid); border-radius: 8px; background: var(--soft); }
+  .map-wrap svg { display: block; min-width: 940px; width: 100%; height: auto; }
+  .hint { color: var(--muted); font-size: .92rem; margin: 0 0 12px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 12px 0 0; font-size: .9rem; color: var(--muted); }
+  .legend i { display: inline-block; width: 14px; height: 14px; border-radius: 3px; margin-right: 6px; vertical-align: -2px; }
+
+  .node-leaf { cursor: pointer; }
+  .node-leaf rect.box { fill: var(--surface); stroke-width: 2.5; transition: fill .15s; }
+  .node-leaf:hover rect.box, .node-leaf.active rect.box { fill: var(--soft); }
+  .node-leaf.active rect.box { stroke-width: 4; }
+  .node-leaf:focus-visible rect.box { stroke: var(--focus); }
+  .t { fill: var(--text); font-family: var(--sans); font-size: 15px; font-weight: 600; text-anchor: middle; }
+  .t.small { font-size: 12px; font-weight: 400; fill: var(--muted); }
+  .t.white { fill: #fff; }
+  .t.link { font-size: 12px; font-weight: 500; font-style: italic; fill: var(--muted); }
+  .conn { fill: none; stroke: var(--line); stroke-width: 1.8; }
+  .linkbg { fill: var(--soft); }
+  .badge { fill: var(--c3); }
+  .badge-t { fill: #fff; font-size: 10.5px; font-weight: 700; text-anchor: middle; font-family: var(--sans); }
+
+  .detail { margin-top: 20px; border: 2px solid var(--text); border-radius: 10px; padding: 18px 20px; background: var(--surface); }
+  .detail h2 { font-family: var(--serif); font-size: 1.5rem; margin: 0 0 4px; }
+  .detail .cat { font-weight: 600; margin: 0 0 10px; }
+  .detail-grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  table { border-collapse: collapse; width: 100%; font-size: .94rem; }
+  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+  th { font-weight: 600; color: var(--muted); width: 38%; }
+  .bigo { font-family: var(--mono); font-weight: 700; }
+  .bar-row { display: flex; align-items: center; gap: 10px; margin: 6px 0; font-size: .88rem; }
+  .bar-row span.n { width: 150px; flex: none; color: var(--muted); }
+  .bar-track { flex: 1; height: 14px; background: var(--soft); border-radius: 7px; overflow: hidden; border: 1px solid var(--grid); }
+  .bar-fill { height: 100%; border-radius: 7px; }
+  .bar-row b { font-family: var(--mono); font-size: .85rem; width: 90px; text-align: right; flex: none; }
+  .btn { font: inherit; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 8px; border: 2px solid var(--text); background: var(--text); color: var(--surface); margin-top: 12px; }
+  .btn.ghost { background: transparent; color: var(--text); }
+
+  /* Flujo */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .chip { font: inherit; font-size: .92rem; cursor: pointer; padding: 6px 14px; border-radius: 999px; border: 2px solid var(--line); background: var(--surface); color: var(--text); }
+  .chip[aria-pressed="true"] { color: #fff; border-color: transparent; font-weight: 600; }
+  .flow-grid { display: grid; gap: 22px; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); align-items: start; }
+  @media (max-width: 960px) { .flow-grid { grid-template-columns: 1fr; } }
+  .flow-svg-wrap { overflow-x: auto; border: 1px solid var(--grid); border-radius: 8px; background: var(--soft); padding: 6px; }
+  .flow-svg-wrap svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+  .fnode { fill: var(--surface); stroke: var(--text); stroke-width: 2; }
+  .fnode.term { fill: var(--text); }
+  .fnode.dec { fill: var(--soft); }
+  .fnode.call { fill: var(--surface); }
+  .ftext { fill: var(--text); font-size: 13.5px; text-anchor: middle; font-family: var(--sans); }
+  .ftext.inv { fill: var(--surface); font-weight: 600; }
+  .fedge { fill: none; stroke: var(--line); stroke-width: 1.8; }
+  .flabel { font-size: 12px; font-weight: 700; fill: var(--text); font-family: var(--sans); }
+  pre.pseudo { margin: 0; padding: 14px 16px; background: var(--soft); border: 1px solid var(--grid); border-radius: 8px; font-family: var(--mono); font-size: .88rem; line-height: 1.55; overflow-x: auto; white-space: pre; }
+  .flow-info h2 { font-family: var(--serif); margin: 0 0 4px; font-size: 1.4rem; }
+  .flow-info p { margin: 0 0 10px; }
+  .flow-info h3 { margin: 16px 0 6px; font-size: 1rem; }
+  .subtabs { display: flex; gap: 6px; margin: 4px 0 10px; flex-wrap: wrap; }
+  .subtabs button { font: inherit; font-size: .88rem; padding: 4px 12px; border-radius: 6px; border: 1.5px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; }
+  .subtabs button[aria-pressed="true"] { background: var(--text); color: var(--surface); border-color: var(--text); }
+
+  /* Comparativa */
+  .cmp-wrap { overflow-x: auto; }
+  .cmp td, .cmp th { white-space: nowrap; width: auto; color: var(--text); }
+  .cmp thead th { color: var(--muted); border-bottom: 2px solid var(--text); }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
+  .note { color: var(--muted); font-size: .9rem; margin-top: 12px; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Métodos de ordenamiento</h1>
+  <p>Mapa conceptual, diagramas de flujo y pseudocódigo de los algoritmos vistos en clase, más Shell Sort como algoritmo adicional.</p>
+</header>
+
+<nav class="tabs" role="tablist" aria-label="Secciones">
+  <button role="tab" id="tab-map" aria-selected="true" aria-controls="p-map">Mapa conceptual</button>
+  <button role="tab" id="tab-flow" aria-selected="false" aria-controls="p-flow">Diagramas de flujo</button>
+  <button role="tab" id="tab-cmp" aria-selected="false" aria-controls="p-cmp">Comparativa</button>
+</nav>
+
+<main>
+  <section class="panel" id="p-map" role="tabpanel" aria-labelledby="tab-map">
+    <p class="hint">Haz clic en cualquier algoritmo para ver su descripción, su notación Big O y su eficiencia.</p>
+    <div class="map-wrap"><svg id="map" viewBox="0 0 1240 590" role="img" aria-label="Mapa conceptual de los métodos de ordenamiento"></svg></div>
+    <div class="legend">
+      <span><i style="background:var(--c1)"></i>Directos o cuadráticos</span>
+      <span><i style="background:var(--c2)"></i>Logarítmicos</span>
+      <span><i style="background:var(--c3)"></i>Algoritmo nuevo (no visto en clase)</span>
+    </div>
+    <div class="detail" id="detail" aria-live="polite"></div>
+  </section>
+
+  <section class="panel" id="p-flow" role="tabpanel" aria-labelledby="tab-flow" hidden>
+    <div class="chips" id="chips" role="group" aria-label="Elegir algoritmo"></div>
+    <div class="flow-grid">
+      <div>
+        <div class="subtabs" id="subtabs"></div>
+        <div class="flow-svg-wrap"><div id="flow"></div></div>
+      </div>
+      <div class="flow-info" id="flowinfo"></div>
+    </div>
+  </section>
+
+  <section class="panel" id="p-cmp" role="tabpanel" aria-labelledby="tab-cmp" hidden>
+    <div class="cmp-wrap">
+      <table class="cmp" id="cmp"></table>
+    </div>
+    <p class="note">Big O del mejor, promedio y peor caso. Un algoritmo es estable si conserva el orden relativo de los elementos iguales. "In-place" significa que ordena dentro del mismo arreglo sin un arreglo auxiliar proporcional a n.</p>
+  </section>
+</main>
+
+<script>
+/* ========================= DATOS ========================= */
+const CATS = {
+  dir: { nombre: "Directos o cuadráticos", color: "var(--c1)" },
+  log: { nombre: "Logarítmicos (divide y vencerás / montículo)", color: "var(--c2)" },
+  inc: { nombre: "Por incrementos (algoritmo nuevo)", color: "var(--c3)" }
+};
+
+const ALGS = [
+  {
+    id: "burbuja", nombre: "Burbuja (Bubble Sort)", cat: "dir",
+    desc: "Recorre el arreglo comparando pares de elementos contiguos y los intercambia si están en orden incorrecto. En cada pasada el mayor elemento \"sube\" hasta su posición final, como una burbuja.",
+    mejor: "O(n)", prom: "O(n²)", peor: "O(n²)", espacio: "O(1)", estable: "Sí", inplace: "Sí", modelo: 1e6,
+    efic: "Muy simple pero poco eficiente. El mejor caso O(n) solo se logra con una bandera que detecta si una pasada no hizo intercambios. Hace muchos intercambios, por eso es de los más lentos en la práctica.",
+    uso: "Con fines didácticos o con arreglos muy pequeños.",
+    flujos: [{ titulo: "Burbuja", nodos: [
+      { t: "start", x: "Inicio BurbujaSort(A, n)" },
+      { t: "proc", x: "i ← 0" },
+      { t: "dec", x: "i < n - 1 ?", no: 9 },
+      { t: "proc", x: "j ← 0" },
+      { t: "dec", x: "j < n - 1 - i ?", no: 8 },
+      { t: "dec", x: "A[j] > A[j+1] ?", no: 7 },
+      { t: "proc", x: "Intercambiar A[j] y A[j+1]" },
+      { t: "proc", x: "j ← j + 1", to: 4 },
+      { t: "proc", x: "i ← i + 1", to: 2 },
+      { t: "end", x: "Fin: arreglo ordenado" }
+    ].map(fixEnds) }],
+    pseudo:
+`BurbujaSort(A, n)
+  para i ← 0 hasta n-2 hacer
+    para j ← 0 hasta n-2-i hacer
+      si A[j] > A[j+1] entonces
+        intercambiar(A[j], A[j+1])
+      fin si
+    fin para
+  fin para
+fin`
+  },
+  {
+    id: "shaker", nombre: "Sacudida (Shaker Sort)", cat: "dir",
+    desc: "Variante bidireccional de la burbuja. Alterna una pasada de izquierda a derecha (lleva el mayor al final) con otra de derecha a izquierda (lleva el menor al inicio), reduciendo los límites en cada vuelta.",
+    mejor: "O(n)", prom: "O(n²)", peor: "O(n²)", espacio: "O(1)", estable: "Sí", inplace: "Sí", modelo: 1e6,
+    efic: "Algo mejor que la burbuja cuando hay elementos pequeños al final del arreglo, pero sigue siendo cuadrático.",
+    uso: "Arreglos pequeños o casi ordenados.",
+    flujos: [{ titulo: "Shaker", nodos: [
+      { t: "start", x: "Inicio ShakerSort(A, n)" },
+      { t: "proc", x: "izq ← 0; der ← n - 1; hubo ← verdadero" },
+      { t: "dec", x: "hubo = verdadero ?", no: 8 },
+      { t: "proc", x: "hubo ← falso" },
+      { t: "proc", x: "Recorrer j de izq a der-1: si A[j] > A[j+1] intercambiar y hubo ← verdadero" },
+      { t: "proc", x: "der ← der - 1" },
+      { t: "proc", x: "Recorrer j de der a izq+1: si A[j-1] > A[j] intercambiar y hubo ← verdadero" },
+      { t: "proc", x: "izq ← izq + 1", to: 2 },
+      { t: "end", x: "Fin: arreglo ordenado" }
+    ] }],
+    pseudo:
+`ShakerSort(A, n)
+  izq ← 0; der ← n-1; hubo ← verdadero
+  mientras hubo hacer
+    hubo ← falso
+    para j ← izq hasta der-1 hacer
+      si A[j] > A[j+1] entonces
+        intercambiar(A[j], A[j+1]); hubo ← verdadero
+    der ← der - 1
+    para j ← der hasta izq+1 paso -1 hacer
+      si A[j-1] > A[j] entonces
+        intercambiar(A[j-1], A[j]); hubo ← verdadero
+    izq ← izq + 1
+  fin mientras
+fin`
+  },
+  {
+    id: "seleccion", nombre: "Selección directa (Selection Sort)", cat: "dir",
+    desc: "En cada pasada busca el menor elemento de la parte no ordenada y lo intercambia con el primero de esa parte. Así va construyendo el prefijo ordenado.",
+    mejor: "O(n²)", prom: "O(n²)", peor: "O(n²)", espacio: "O(1)", estable: "No", inplace: "Sí", modelo: 1e6,
+    efic: "Siempre hace del orden de n² comparaciones, pero como máximo n-1 intercambios. Es útil cuando escribir en memoria es costoso.",
+    uso: "Arreglos pequeños donde se quiere minimizar el número de intercambios.",
+    flujos: [{ titulo: "Selección", nodos: [
+      { t: "start", x: "Inicio SeleccionSort(A, n)" },
+      { t: "proc", x: "i ← 0" },
+      { t: "dec", x: "i < n - 1 ?", no: 11 },
+      { t: "proc", x: "min ← i" },
+      { t: "proc", x: "j ← i + 1" },
+      { t: "dec", x: "j < n ?", no: 9 },
+      { t: "dec", x: "A[j] < A[min] ?", no: 8 },
+      { t: "proc", x: "min ← j" },
+      { t: "proc", x: "j ← j + 1", to: 5 },
+      { t: "proc", x: "Intercambiar A[i] y A[min]" },
+      { t: "proc", x: "i ← i + 1", to: 2 },
+      { t: "end", x: "Fin: arreglo ordenado" }
+    ] }],
+    pseudo:
+`SeleccionSort(A, n)
+  para i ← 0 hasta n-2 hacer
+    min ← i
+    para j ← i+1 hasta n-1 hacer
+      si A[j] < A[min] entonces
+        min ← j
+      fin si
+    fin para
+    intercambiar(A[i], A[min])
+  fin para
+fin`
+  },
+  {
+    id: "insercion", nombre: "Inserción directa (Insertion Sort)", cat: "dir",
+    desc: "Toma cada elemento y lo inserta en su lugar dentro de la parte izquierda ya ordenada, desplazando a la derecha los elementos mayores. Funciona como ordenar las cartas de una mano.",
+    mejor: "O(n)", prom: "O(n²)", peor: "O(n²)", espacio: "O(1)", estable: "Sí", inplace: "Sí", modelo: 1e6,
+    efic: "Excelente con datos casi ordenados (cerca de O(n)) y rápido en arreglos pequeños. Es el mejor de los métodos directos en la práctica.",
+    uso: "Arreglos pequeños, casi ordenados, o datos que llegan de uno en uno.",
+    flujos: [{ titulo: "Inserción", nodos: [
+      { t: "start", x: "Inicio InsercionSort(A, n)" },
+      { t: "proc", x: "i ← 1" },
+      { t: "dec", x: "i < n ?", no: 9 },
+      { t: "proc", x: "clave ← A[i]; j ← i - 1" },
+      { t: "dec", x: "j ≥ 0 y A[j] > clave ?", no: 7 },
+      { t: "proc", x: "A[j+1] ← A[j]" },
+      { t: "proc", x: "j ← j - 1", to: 4 },
+      { t: "proc", x: "A[j+1] ← clave" },
+      { t: "proc", x: "i ← i + 1", to: 2 },
+      { t: "end", x: "Fin: arreglo ordenado" }
+    ] }],
+    pseudo:
+`InsercionSort(A, n)
+  para i ← 1 hasta n-1 hacer
+    clave ← A[i]
+    j ← i - 1
+    mientras j ≥ 0 y A[j] > clave hacer
+      A[j+1] ← A[j]
+      j ← j - 1
+    fin mientras
+    A[j+1] ← clave
+  fin para
+fin`
+  },
+  {
+    id: "merge", nombre: "MergeSort (ordenamiento por mezcla)", cat: "log",
+    desc: "Divide el arreglo por la mitad, ordena recursivamente cada mitad y luego mezcla (merge) las dos mitades ordenadas en una sola. Es el ejemplo clásico de divide y vencerás.",
+    mejor: "O(n log n)", prom: "O(n log n)", peor: "O(n log n)", espacio: "O(n)", estable: "Sí", inplace: "No", modelo: 9966,
+    efic: "Rendimiento predecible: siempre O(n log n), sin importar el orden inicial. Su costo es la memoria auxiliar O(n) para mezclar.",
+    uso: "Cuando se necesita estabilidad y tiempo garantizado; muy usado con listas enlazadas y datos externos.",
+    flujos: [
+      { titulo: "MergeSort", nodos: [
+        { t: "start", x: "Inicio MergeSort(A, l, r)" },
+        { t: "dec", x: "l < r ?", no: 6 },
+        { t: "proc", x: "m ← (l + r) / 2" },
+        { t: "call", x: "MergeSort(A, l, m)" },
+        { t: "call", x: "MergeSort(A, m+1, r)" },
+        { t: "call", x: "Merge(A, l, m, r)" },
+        { t: "end", x: "Retornar" }
+      ] },
+      { titulo: "Merge (mezcla)", nodos: [
+        { t: "start", x: "Inicio Merge(A, l, m, r)" },
+        { t: "proc", x: "aux ← copia de A[l..r]; i ← l; j ← m+1; k ← l" },
+        { t: "dec", x: "i ≤ m y j ≤ r ?", no: 7 },
+        { t: "dec", x: "aux[i] ≤ aux[j] ?", no: 5 },
+        { t: "proc", x: "A[k] ← aux[i]; i ← i + 1", to: 6 },
+        { t: "proc", x: "A[k] ← aux[j]; j ← j + 1" },
+        { t: "proc", x: "k ← k + 1", to: 2 },
+        { t: "proc", x: "Copiar los elementos restantes de la mitad no agotada" },
+        { t: "end", x: "Retornar" }
+      ] }
+    ],
+    pseudo:
+`MergeSort(A, l, r)
+  si l < r entonces
+    m ← (l + r) / 2
+    MergeSort(A, l, m)
+    MergeSort(A, m+1, r)
+    Merge(A, l, m, r)
+  fin si
+fin
+
+Merge(A, l, m, r)
+  aux ← copia de A[l..r]
+  i ← l; j ← m+1; k ← l
+  mientras i ≤ m y j ≤ r hacer
+    si aux[i] ≤ aux[j] entonces
+      A[k] ← aux[i]; i ← i + 1
+    sino
+      A[k] ← aux[j]; j ← j + 1
+    fin si
+    k ← k + 1
+  fin mientras
+  copiar los restantes de la mitad no agotada
+fin`
+  },
+  {
+    id: "quick", nombre: "QuickSort (ordenamiento rápido)", cat: "log",
+    desc: "Elige un pivote y particiona el arreglo: los menores quedan antes del pivote y los mayores después. Luego aplica la misma idea de forma recursiva a cada lado. Fue inventado por C.A.R. Hoare en 1960.",
+    mejor: "O(n log n)", prom: "O(n log n)", peor: "O(n²)", espacio: "O(log n)", estable: "No", inplace: "Sí", modelo: 9966,
+    efic: "Normalmente el más rápido en la práctica. El peor caso O(n²) aparece con arreglos ya ordenados o inversos si el pivote es siempre el primero o el último. Elegir el pivote al azar o la mediana lo evita.",
+    uso: "Ordenamiento interno de propósito general con arreglos grandes.",
+    flujos: [
+      { titulo: "QuickSort", nodos: [
+        { t: "start", x: "Inicio QuickSort(A, bajo, alto)" },
+        { t: "dec", x: "bajo < alto ?", no: 5 },
+        { t: "call", x: "p ← Particion(A, bajo, alto)" },
+        { t: "call", x: "QuickSort(A, bajo, p - 1)" },
+        { t: "call", x: "QuickSort(A, p + 1, alto)" },
+        { t: "end", x: "Retornar" }
+      ] },
+      { titulo: "Partición (Lomuto)", nodos: [
+        { t: "start", x: "Inicio Particion(A, bajo, alto)" },
+        { t: "proc", x: "pivote ← A[alto]; i ← bajo - 1" },
+        { t: "proc", x: "j ← bajo" },
+        { t: "dec", x: "j < alto ?", no: 7 },
+        { t: "dec", x: "A[j] ≤ pivote ?", no: 6 },
+        { t: "proc", x: "i ← i + 1; intercambiar A[i] y A[j]" },
+        { t: "proc", x: "j ← j + 1", to: 3 },
+        { t: "proc", x: "Intercambiar A[i+1] y A[alto]" },
+        { t: "end", x: "Retornar i + 1" }
+      ] }
+    ],
+    pseudo:
+`QuickSort(A, bajo, alto)
+  si bajo < alto entonces
+    p ← Particion(A, bajo, alto)
+    QuickSort(A, bajo, p-1)
+    QuickSort(A, p+1, alto)
+  fin si
+fin
+
+Particion(A, bajo, alto)
+  pivote ← A[alto]
+  i ← bajo - 1
+  para j ← bajo hasta alto-1 hacer
+    si A[j] ≤ pivote entonces
+      i ← i + 1
+      intercambiar(A[i], A[j])
+    fin si
+  fin para
+  intercambiar(A[i+1], A[alto])
+  retornar i + 1
+fin`
+  },
+  {
+    id: "heap", nombre: "HeapSort (ordenamiento por montículo)", cat: "log",
+    desc: "Construye un montículo máximo (árbol binario completo donde cada padre es mayor que sus hijos). Luego extrae repetidamente la raíz, que es el mayor, la coloca al final del arreglo y reorganiza el montículo.",
+    mejor: "O(n log n)", prom: "O(n log n)", peor: "O(n log n)", espacio: "O(1)", estable: "No", inplace: "Sí", modelo: 9966,
+    efic: "Garantiza O(n log n) sin memoria extra, pero en la práctica suele ser más lento que QuickSort por su mal aprovechamiento de la caché. Es no recursivo.",
+    uso: "Cuando se necesita tiempo garantizado y poca memoria, o para colas de prioridad.",
+    flujos: [{ titulo: "HeapSort", nodos: [
+      { t: "start", x: "Inicio HeapSort(A, n)" },
+      { t: "proc", x: "i ← n / 2 - 1" },
+      { t: "dec", x: "i ≥ 0 ?", no: 5 },
+      { t: "call", x: "Heapify(A, n, i)  (construir montículo)" },
+      { t: "proc", x: "i ← i - 1", to: 2 },
+      { t: "proc", x: "fin ← n - 1" },
+      { t: "dec", x: "fin > 0 ?", no: 10 },
+      { t: "proc", x: "Intercambiar A[0] y A[fin]" },
+      { t: "call", x: "Heapify(A, fin, 0)" },
+      { t: "proc", x: "fin ← fin - 1", to: 6 },
+      { t: "end", x: "Fin: arreglo ordenado" }
+    ] }],
+    pseudo:
+`HeapSort(A, n)
+  para i ← n/2 - 1 hasta 0 paso -1 hacer
+    Heapify(A, n, i)
+  fin para
+  para fin ← n-1 hasta 1 paso -1 hacer
+    intercambiar(A[0], A[fin])
+    Heapify(A, fin, 0)
+  fin para
+fin
+
+Heapify(A, n, i)
+  mayor ← i; izq ← 2*i + 1; der ← 2*i + 2
+  si izq < n y A[izq] > A[mayor] entonces mayor ← izq
+  si der < n y A[der] > A[mayor] entonces mayor ← der
+  si mayor ≠ i entonces
+    intercambiar(A[i], A[mayor])
+    Heapify(A, n, mayor)
+  fin si
+fin`
+  },
+  {
+    id: "shell", nombre: "Shell Sort (ordenamiento Shell)", cat: "inc", nuevo: true,
+    desc: "Mejora de la inserción directa propuesta por Donald Shell en 1959. Primero compara y ordena elementos separados por un salto grande, luego reduce el salto (n/2, n/4, ... hasta 1) repitiendo la inserción. Al llegar a salto 1 el arreglo ya está casi ordenado y la inserción final es muy rápida.",
+    mejor: "O(n log n)", prom: "≈ O(n^1.5)", peor: "O(n²)", espacio: "O(1)", estable: "No", inplace: "Sí", modelo: 31623,
+    efic: "Su rendimiento depende de la secuencia de saltos. Con la secuencia original n/2 el peor caso es O(n²); con secuencias mejores (Knuth, Sedgewick) baja a cerca de O(n^1.3). Es mucho más rápido que los métodos cuadráticos sin necesitar recursión ni memoria extra.",
+    uso: "Arreglos medianos (miles de elementos) cuando se quiere algo simple, in-place y más rápido que la inserción.",
+    flujos: [{ titulo: "Shell Sort", nodos: [
+      { t: "start", x: "Inicio ShellSort(A, n)" },
+      { t: "proc", x: "salto ← n / 2" },
+      { t: "dec", x: "salto > 0 ?", no: 11 },
+      { t: "proc", x: "i ← salto" },
+      { t: "dec", x: "i < n ?", no: 10 },
+      { t: "proc", x: "temp ← A[i]; j ← i" },
+      { t: "dec", x: "j ≥ salto y A[j - salto] > temp ?", no: 9 },
+      { t: "proc", x: "A[j] ← A[j - salto]" },
+      { t: "proc", x: "j ← j - salto", to: 6 },
+      { t: "proc", x: "A[j] ← temp; i ← i + 1", to: 4 },
+      { t: "proc", x: "salto ← salto / 2", to: 2 },
+      { t: "end", x: "Fin: arreglo ordenado" }
+    ] }],
+    pseudo:
+`ShellSort(A, n)
+  salto ← n / 2
+  mientras salto > 0 hacer
+    para i ← salto hasta n-1 hacer
+      temp ← A[i]
+      j ← i
+      mientras j ≥ salto y A[j - salto] > temp hacer
+        A[j] ← A[j - salto]
+        j ← j - salto
+      fin mientras
+      A[j] ← temp
+    fin para
+    salto ← salto / 2
+  fin mientras
+fin`
+  }
+];
+function fixEnds(n) { return n; }
+const byId = Object.fromEntries(ALGS.map(a => [a.id, a]));
+
+/* ========================= HELPERS ========================= */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+function wrap(t, max) {
+  const words = t.split(" "); const L = []; let c = "";
+  for (const w of words) {
+    if ((c + " " + w).trim().length > max) { if (c) L.push(c); c = w; }
+    else c = (c + " " + w).trim();
+  }
+  if (c) L.push(c);
+  return L;
+}
+function textLines(cx, cy, lines, cls, lh) {
+  lh = lh || 17;
+  const y0 = cy - (lines.length - 1) * lh / 2 + 5;
+  return `<text class="${cls}" x="${cx}">` + lines.map((l, i) =>
+    `<tspan x="${cx}" y="${y0 + i * lh}">${esc(l)}</tspan>`).join("") + `</text>`;
+}
+
+/* ========================= MAPA CONCEPTUAL ========================= */
+const MAP = {
+  root: { x: 620, y: 50, w: 300, h: 58 },
+  cats: {
+    dir: { x: 220, y: 190, w: 250, h: 66, l1: "Directos o cuadráticos", l2: "O(n²)" },
+    log: { x: 620, y: 190, w: 250, h: 66, l1: "Logarítmicos", l2: "O(n log n)" },
+    inc: { x: 1080, y: 190, w: 230, h: 66, l1: "Por incrementos", l2: "O(n^1.5) aprox." }
+  },
+  leaves: {
+    burbuja: { x: 220, y: 320 }, shaker: { x: 220, y: 388 }, seleccion: { x: 220, y: 456 }, insercion: { x: 220, y: 524 },
+    merge: { x: 620, y: 320 }, quick: { x: 620, y: 388 }, heap: { x: 620, y: 456 },
+    shell: { x: 1080, y: 320 }
+  },
+  LW: 196, LH: 50
+};
+const LEAF_LABEL = {
+  burbuja: ["Burbuja", "Bubble Sort"], shaker: ["Sacudida", "Shaker Sort"], seleccion: ["Selección directa", "Selection Sort"],
+  insercion: ["Inserción directa", "Insertion Sort"], merge: ["MergeSort", "por mezcla"], quick: ["QuickSort", "rápido"],
+  heap: ["HeapSort", "por montículo"], shell: ["Shell Sort", "por saltos"]
+};
+
+function linkLabel(x, y, txt) {
+  const w = txt.length * 6.4 + 12;
+  return `<rect class="linkbg" x="${x - w / 2}" y="${y - 10}" width="${w}" height="18" rx="4"/>` +
+         `<text class="t link" x="${x}" y="${y + 3}">${esc(txt)}</text>`;
+}
+
+function buildMap() {
+  const r = MAP.root; let s = "";
+  s += `<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--line)"/></marker></defs>`;
+
+  // Raíz → categorías
+  const rl = { dir: "se dividen en", log: "se dividen en", inc: "y también en" };
+  for (const k of Object.keys(MAP.cats)) {
+    const c = MAP.cats[k];
+    const x1 = r.x, y1 = r.y + r.h / 2, x2 = c.x, y2 = c.y - c.h / 2;
+    const my = (y1 + y2) / 2;
+    s += `<path class="conn" d="M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}" marker-end="url(#arr)"/>`;
+    const lx = (x1 + x2) / 2 + (k === "log" ? 0 : (k === "dir" ? -6 : 6));
+    s += linkLabel(k === "log" ? x1 + 52 : lx, my + (k === "log" ? 6 : 0), rl[k]);
+  }
+  // Raíz
+  s += `<rect x="${r.x - r.w / 2}" y="${r.y - r.h / 2}" width="${r.w}" height="${r.h}" rx="12" style="fill:var(--text)"/>`;
+  s += `<text class="t white" x="${r.x}" y="${r.y + 6}" style="font-size:19px;font-family:var(--serif)">Métodos de ordenamiento</text>`;
+
+  // Categorías + buses + hojas
+  const groups = { dir: ["burbuja", "shaker", "seleccion", "insercion"], log: ["merge", "quick", "heap"], inc: ["shell"] };
+  for (const k of Object.keys(MAP.cats)) {
+    const c = MAP.cats[k]; const col = CATS[k].color;
+    s += `<rect x="${c.x - c.w / 2}" y="${c.y - c.h / 2}" width="${c.w}" height="${c.h}" rx="12" style="fill:${col}"/>`;
+    s += `<text class="t white" x="${c.x}" y="${c.y - 4}" style="font-size:17px">${c.l1}</text>`;
+    s += `<text class="t white" x="${c.x}" y="${c.y + 16}" style="font-size:14px;font-family:var(--mono);font-weight:700">${c.l2}</text>`;
+    const ids = groups[k];
+    if (k !== "inc") {
+      const bx = c.x - 112; const yTop = c.y + c.h / 2; const yLast = MAP.leaves[ids[ids.length - 1]].y;
+      s += `<path class="conn" d="M${bx},${yTop} V${yLast}"/>`;
+      s += linkLabel(bx - 34, yTop + 24, "incluye");
+      for (const id of ids) {
+        const ly = MAP.leaves[id].y;
+        s += `<path class="conn" d="M${bx},${ly} H${c.x - MAP.LW / 2 - 2}" marker-end="url(#arr)"/>`;
+      }
+    } else {
+      s += `<path class="conn" d="M${c.x},${c.y + c.h / 2} V${MAP.leaves.shell.y - MAP.LH / 2 - 2}" marker-end="url(#arr)"/>`;
+      s += linkLabel(c.x + 44, c.y + c.h / 2 + 22, "incluye");
+    }
+  }
+
+  // Hojas
+  for (const id of Object.keys(MAP.leaves)) {
+    const p = MAP.leaves[id]; const a = byId[id]; const col = CATS[a.cat].color;
+    const lab = LEAF_LABEL[id];
+    s += `<g class="node-leaf" data-id="${id}" tabindex="0" role="button" aria-label="${esc(a.nombre)}, ${a.prom} en promedio">`;
+    s += `<rect class="box" x="${p.x - MAP.LW / 2}" y="${p.y - MAP.LH / 2}" width="${MAP.LW}" height="${MAP.LH}" rx="10" style="stroke:${col}"/>`;
+    s += `<text class="t" x="${p.x}" y="${p.y - 3}">${lab[0]}</text>`;
+    s += `<text class="t small" x="${p.x}" y="${p.y + 14}">${lab[1]}</text>`;
+    if (a.nuevo) {
+      s += `<rect class="badge" x="${p.x + MAP.LW / 2 - 52}" y="${p.y - MAP.LH / 2 - 9}" width="58" height="18" rx="9"/>`;
+      s += `<text class="badge-t" x="${p.x + MAP.LW / 2 - 23}" y="${p.y - MAP.LH / 2 + 4}">NUEVO</text>`;
+    }
+    s += `</g>`;
+  }
+
+  // Conceptos auxiliares: Divide y vencerás, Montículo
+  const auxStyle = `style="fill:var(--surface);stroke:var(--line);stroke-width:2;stroke-dasharray:6 4"`;
+  const dv = { x: 880, y: 354, w: 190, h: 54 };
+  s += `<rect x="${dv.x - dv.w / 2}" y="${dv.y - dv.h / 2}" width="${dv.w}" height="${dv.h}" rx="10" ${auxStyle}/>`;
+  s += textLines(dv.x, dv.y, ["Técnica divide", "y vencerás"], "t", 17);
+  const lx = 620 + MAP.LW / 2;
+  s += `<path class="conn" d="M${lx + 2},${MAP.leaves.merge.y} L${dv.x - dv.w / 2 - 2},${dv.y - 12}" marker-end="url(#arr)"/>`;
+  s += `<path class="conn" d="M${lx + 2},${MAP.leaves.quick.y} L${dv.x - dv.w / 2 - 2},${dv.y + 12}" marker-end="url(#arr)"/>`;
+  s += linkLabel(lx + 36, dv.y, "aplican");
+
+  const hp = { x: 880, y: 456, w: 190, h: 54 };
+  s += `<rect x="${hp.x - hp.w / 2}" y="${hp.y - hp.h / 2}" width="${hp.w}" height="${hp.h}" rx="10" ${auxStyle}/>`;
+  s += textLines(hp.x, hp.y, ["Montículo máximo", "(árbol binario)"], "t", 17);
+  s += `<path class="conn" d="M${lx + 2},${MAP.leaves.heap.y} H${hp.x - hp.w / 2 - 2}" marker-end="url(#arr)"/>`;
+  s += linkLabel(lx + 36, hp.y - 14, "usa un");
+
+  const sh = { x: 1080, y: 420, w: 190, h: 54 };
+  s += `<rect x="${sh.x - sh.w / 2}" y="${sh.y - sh.h / 2}" width="${sh.w}" height="${sh.h}" rx="10" ${auxStyle}/>`;
+  s += textLines(sh.x, sh.y, ["Inserción con saltos", "decrecientes"], "t", 17);
+  s += `<path class="conn" d="M${MAP.leaves.shell.x},${MAP.leaves.shell.y + MAP.LH / 2 + 2} V${sh.y - sh.h / 2 - 2}" marker-end="url(#arr)"/>`;
+  s += linkLabel(1080 + 52, 372, "generaliza la");
+  // Nota inferior derecha
+  s += `<text class="t small" x="1080" y="512" style="font-size:12px">Idea: ordenar “de lejos”</text>`;
+  s += `<text class="t small" x="1080" y="530" style="font-size:12px">y terminar con salto 1.</text>`;
+
+  $("#map").innerHTML = s;
+}
+
+function showDetail(id) {
+  const a = byId[id]; const col = CATS[a.cat].color;
+  document.querySelectorAll(".node-leaf").forEach(n => n.classList.toggle("active", n.dataset.id === id));
+  const maxLog = Math.log10(1e6);
+  const bars = ALGS.map(x => {
+    const w = Math.max(3, Math.log10(x.modelo) / maxLog * 100);
+    const hl = x.id === id;
+    return `<div class="bar-row" style="${hl ? "font-weight:700;color:var(--text)" : ""}"><span class="n" style="${hl ? "color:var(--text)" : ""}">${esc(LEAF_LABEL[x.id][0])}</span>` +
+      `<div class="bar-track"><div class="bar-fill" style="width:${w}%;background:${CATS[x.cat].color};opacity:${hl ? 1 : .35}"></div></div>` +
+      `<b>${x.modelo.toLocaleString("es-CO")}</b></div>`;
+  }).join("");
+  $("#detail").innerHTML = `
+    <h2>${esc(a.nombre)}${a.nuevo ? ' <span style="font-size:.7rem;background:var(--c3);color:#fff;padding:2px 9px;border-radius:9px;vertical-align:middle;font-family:var(--sans)">NUEVO</span>' : ""}</h2>
+    <p class="cat" style="color:${col}">${esc(CATS[a.cat].nombre)}</p>
+    <div class="detail-grid">
+      <div>
+        <p style="margin-top:0">${esc(a.desc)}</p>
+        <table>
+          <tr><th>Mejor caso</th><td class="bigo">${a.mejor}</td></tr>
+          <tr><th>Caso promedio</th><td class="bigo">${a.prom}</td></tr>
+          <tr><th>Peor caso</th><td class="bigo">${a.peor}</td></tr>
+          <tr><th>Memoria extra</th><td class="bigo">${a.espacio}</td></tr>
+          <tr><th>Estable</th><td>${a.estable}</td></tr>
+          <tr><th>In-place</th><td>${a.inplace}</td></tr>
+        </table>
+      </div>
+      <div>
+        <p style="margin-top:0"><b>Eficiencia.</b> ${esc(a.efic)}</p>
+        <p><b>Cuándo usarlo.</b> ${esc(a.uso)}</p>
+        <p style="margin-bottom:4px"><b>Operaciones aproximadas con n = 1000</b> <span style="color:var(--muted);font-size:.85rem">(escala logarítmica, caso promedio)</span></p>
+        ${bars}
+        <button class="btn" id="goflow">Ver diagrama de flujo y pseudocódigo</button>
+      </div>
+    </div>`;
+  $("#goflow").onclick = () => { selectTab("flow"); showFlow(id, 0); };
+}
+
+/* ========================= DIAGRAMA DE FLUJO ========================= */
+function flowSVG(nodes) {
+  const CX = 215, RW = 300, DW = 340, GAP = 38;
+  const info = nodes.map(n => {
+    const dec = n.t === "dec", term = n.t === "start" || n.t === "end";
+    const lines = wrap(n.x, dec ? 24 : (term ? 34 : 36));
+    const h = dec ? Math.max(84, lines.length * 17 + 52) : Math.max(46, lines.length * 17 + 22);
+    return Object.assign({}, n, { lines, h, w: dec ? DW : RW });
+  });
+  let y = 28;
+  info.forEach(n => { n.top = y; n.cy = y + n.h / 2; n.bot = y + n.h; y += n.h + GAP; });
+  const H = y - GAP + 28;
+
+  // Aristas
+  const straight = [], side = [];
+  info.forEach((n, i) => {
+    if (n.t === "end") return;
+    const to = n.to !== undefined ? n.to : i + 1;
+    const label = n.t === "dec" ? "Sí" : "";
+    (to === i + 1 ? straight : side).push({ from: i, to, label });
+    if (n.t === "dec") (n.no === i + 1 ? straight : side).push({ from: i, to: n.no, label: "No" });
+  });
+  side.sort((a, b) => Math.abs(a.to - a.from) - Math.abs(b.to - b.from));
+  const base = CX + DW / 2 + 30;
+  const W = base + side.length * 20 + 40;
+
+  const dep = (n, e) => n.t === "dec" ? [CX + n.w / 2, n.cy] : [CX + n.w / 2, n.cy + 9];
+  const arr = n => {
+    if (n.t === "dec") { const f = 0.38; return [CX + (n.w / 2) * (1 - f), n.cy - f * n.h / 2]; }
+    return [CX + n.w / 2, n.cy - 0.27 * n.h];
+  };
+
+  let s = `<defs><marker id="fa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--line)"/></marker></defs>`;
+  // Nodos
+  info.forEach(n => {
+    const x = CX - n.w / 2;
+    if (n.t === "start" || n.t === "end") {
+      s += `<rect class="fnode term" x="${x}" y="${n.top}" width="${n.w}" height="${n.h}" rx="${n.h / 2}"/>`;
+      s += textLines(CX, n.cy, n.lines, "ftext inv");
+    } else if (n.t === "dec") {
+      const p = `${CX},${n.top} ${CX + n.w / 2},${n.cy} ${CX},${n.bot} ${CX - n.w / 2},${n.cy}`;
+      s += `<polygon class="fnode dec" points="${p}"/>`;
+      s += textLines(CX, n.cy, n.lines, "ftext");
+    } else {
+      s += `<rect class="fnode ${n.t}" x="${x}" y="${n.top}" width="${n.w}" height="${n.h}" rx="6"/>`;
+      if (n.t === "call") {
+        s += `<line class="fnode" x1="${x + 12}" y1="${n.top}" x2="${x + 12}" y2="${n.bot}"/><line class="fnode" x1="${x + n.w - 12}" y1="${n.top}" x2="${x + n.w - 12}" y2="${n.bot}"/>`;
+      }
+      s += textLines(CX, n.cy, n.lines, "ftext");
+    }
+  });
+  // Aristas rectas
+  straight.forEach(e => {
+    const a = info[e.from], b = info[e.to];
+    s += `<path class="fedge" d="M${CX},${a.bot} V${b.top - 1}" marker-end="url(#fa)"/>`;
+    if (e.label) s += `<text class="flabel" x="${CX + 8}" y="${a.bot + 20}">${e.label}</text>`;
+  });
+  // Aristas laterales
+  side.forEach((e, rank) => {
+    const a = info[e.from], b = info[e.to];
+    const [dx, dy] = dep(a, e), [ax, ay] = arr(b);
+    const xo = base + rank * 20;
+    s += `<path class="fedge" d="M${dx},${dy} H${xo} V${ay} H${ax + 1}" marker-end="url(#fa)"/>`;
+    if (e.label) s += `<text class="flabel" x="${dx + 6}" y="${dy - 6}">${e.label}</text>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" width="${W}" role="img" aria-label="Diagrama de flujo">${s}</svg>`;
+}
+
+let cur = { id: "burbuja", sub: 0 };
+function buildChips() {
+  $("#chips").innerHTML = ALGS.map(a =>
+    `<button class="chip" data-id="${a.id}" aria-pressed="false">${esc(LEAF_LABEL[a.id][0])}${a.nuevo ? " (nuevo)" : ""}</button>`).join("");
+}
+function showFlow(id, sub) {
+  cur = { id, sub: sub || 0 };
+  const a = byId[id];
+  document.querySelectorAll(".chip").forEach(c => {
+    const on = c.dataset.id === id;
+    c.setAttribute("aria-pressed", on);
+    c.style.background = on ? CATS[byId[c.dataset.id].cat].color : "";
+  });
+  $("#subtabs").innerHTML = a.flujos.length > 1
+    ? a.flujos.map((f, i) => `<button data-sub="${i}" aria-pressed="${i === cur.sub}">${esc(f.titulo)}</button>`).join("") : "";
+  $("#flow").innerHTML = flowSVG(a.flujos[cur.sub].nodos);
+  $("#flowinfo").innerHTML = `
+    <h2>${esc(a.nombre)}</h2>
+    <p style="color:var(--muted)">${esc(a.desc)}</p>
+    <table>
+      <tr><th>Big O (mejor / prom. / peor)</th><td class="bigo">${a.mejor} / ${a.prom} / ${a.peor}</td></tr>
+      <tr><th>Memoria extra</th><td class="bigo">${a.espacio}</td></tr>
+    </table>
+    <h3>Pseudocódigo</h3>
+    <pre class="pseudo">${esc(a.pseudo)}</pre>
+    <p style="margin-top:10px;font-size:.85rem;color:var(--muted)">Símbolos: óvalo = inicio/fin, rectángulo = proceso, rombo = decisión, rectángulo con barras laterales = llamada a otro procedimiento.</p>`;
+}
+
+/* ========================= COMPARATIVA ========================= */
+function buildCmp() {
+  let h = `<thead><tr><th>Algoritmo</th><th>Mejor</th><th>Promedio</th><th>Peor</th><th>Memoria extra</th><th>Estable</th><th>In-place</th></tr></thead><tbody>`;
+  ALGS.forEach(a => {
+    h += `<tr><td><span class="dot" style="background:${CATS[a.cat].color}"></span>${esc(a.nombre)}${a.nuevo ? " (nuevo)" : ""}</td>` +
+      `<td class="bigo">${a.mejor}</td><td class="bigo">${a.prom}</td><td class="bigo">${a.peor}</td><td class="bigo">${a.espacio}</td><td>${a.estable}</td><td>${a.inplace}</td></tr>`;
+  });
+  $("#cmp").innerHTML = h + "</tbody>";
+}
+
+/* ========================= TABS / EVENTOS ========================= */
+function selectTab(name) {
+  ["map", "flow", "cmp"].forEach(k => {
+    $("#tab-" + k).setAttribute("aria-selected", k === name);
+    $("#p-" + k).hidden = k !== name;
+  });
+}
+document.querySelectorAll("nav.tabs button").forEach(b => b.addEventListener("click", () => selectTab(b.id.replace("tab-", ""))));
+$("#map").addEventListener("click", e => { const g = e.target.closest(".node-leaf"); if (g) showDetail(g.dataset.id); });
+$("#map").addEventListener("keydown", e => {
+  if ((e.key === "Enter" || e.key === " ") && e.target.closest(".node-leaf")) { e.preventDefault(); showDetail(e.target.closest(".node-leaf").dataset.id); }
+});
+$("#chips").addEventListener("click", e => { const c = e.target.closest(".chip"); if (c) showFlow(c.dataset.id, 0); });
+$("#subtabs").addEventListener("click", e => { const b = e.target.closest("button"); if (b) showFlow(cur.id, +b.dataset.sub); });
+
+buildMap(); buildChips(); buildCmp();
+showDetail("shell"); showFlow("burbuja", 0);
+</script>
+</body>
+</html>
